@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beacon — เช็คลิงก์ก่อนกดยอมรับคุกกี้</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c1c1a;
+  --bg-deep: #071411;
+  --surface: #12271f;
+  --surface-alt: #17332a;
+  --border: #24453a;
+  --text: #eaf2ee;
+  --muted: #8aa89c;
+  --gold: #f2c675;
+  --gold-soft: rgba(242, 198, 117, 0.18);
+  --safe: #4fd1a5;
+  --warn: #f4b860;
+  --danger: #e8674f;
+  --font-display: "Fraunces", serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+.sky {
+  position: relative;
+  height: 320px;
+  overflow: hidden;
+  background: radial-gradient(120% 100% at 50% 120%, #14352b 0%, var(--bg-deep) 65%);
+  border-bottom: 1px solid var(--border);
+}
+.beam {
+  position: absolute;
+  top: 44px; left: 50%;
+  width: 900px; height: 900px;
+  margin-left: -450px;
+  background: conic-gradient(from 0deg,
+    transparent 0deg, rgba(242,198,117,0.16) 8deg, rgba(242,198,117,0.02) 16deg,
+    transparent 40deg, transparent 320deg, rgba(242,198,117,0.02) 344deg,
+    rgba(242,198,117,0.16) 352deg, transparent 360deg);
+  animation: sweep 7s linear infinite;
+  transform-origin: 450px 6px;
+}
+@keyframes sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.stars {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 25%, rgba(234,242,238,0.5) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 70% 15%, rgba(234,242,238,0.35) 50%, transparent 51%),
+    radial-gradient(1px 1px at 85% 40%, rgba(234,242,238,0.4) 50%, transparent 51%),
+    radial-gradient(1px 1px at 35% 10%, rgba(234,242,238,0.3) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 55% 30%, rgba(234,242,238,0.25) 50%, transparent 51%);
+  opacity: 0.8;
+}
+.hero {
+  position: relative;
+  max-width: 720px;
+  margin: -220px auto 0;
+  padding: 0 24px 40px;
+  text-align: center;
+}
+.lighthouse-mark { position: relative; width: 46px; height: 78px; margin: 0 auto 18px; }
+.lighthouse-mark .lamp {
+  position: absolute; top: 0; left: 50%;
+  width: 20px; height: 20px; margin-left: -10px;
+  background: var(--gold); border-radius: 50%;
+  box-shadow: 0 0 18px 6px var(--gold-soft), 0 0 40px 14px rgba(242,198,117,0.12);
+  animation: pulse-lamp 2.4s ease-in-out infinite;
+}
+@keyframes pulse-lamp { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+.lighthouse-mark .tower {
+  position: absolute; bottom: 0; left: 50%;
+  width: 26px; height: 54px; margin-left: -13px;
+  background: linear-gradient(180deg, #e8e0cf 0%, #c9bfa4 40%, #a99a76 100%);
+  clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%);
+}
+.eyebrow {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--gold); margin: 0 0 6px;
+}
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(44px, 9vw, 64px); margin: 0 0 12px; letter-spacing: -0.01em; }
+.subhead { color: var(--muted); font-size: 15.5px; line-height: 1.65; max-width: 560px; margin: 0 auto 30px; }
+
+.console {
+  display: flex; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 8px; box-shadow: 0 20px 50px -25px rgba(0,0,0,0.6);
+}
+#url-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: var(--font-mono); font-size: 15px; padding: 12px 14px; min-width: 0; }
+#url-input::placeholder { color: #5f7d70; }
+#check-btn {
+  background: var(--gold); color: #14261f; border: none; border-radius: 9px;
+  padding: 0 22px; font-family: var(--font-body); font-weight: 700; font-size: 14px;
+  cursor: pointer; transition: transform 0.15s ease, background 0.2s ease; white-space: nowrap;
+}
+#check-btn:hover { background: #f6d48f; transform: translateY(-1px); }
+#check-btn:disabled { opacity: 0.6; cursor: progress; transform: none; }
+.form-error { color: var(--danger); font-size: 14px; margin-top: 14px; }
+
+main { max-width: 720px; margin: 0 auto; padding: 0 24px 70px; }
+
+.loading { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 50px 0; }
+.sweep-loader { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--gold); animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading-text { color: var(--muted); font-family: var(--font-mono); font-size: 14px; }
+
+.result { animation: rise 0.4s ease both; }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.signal-card { display: flex; align-items: center; gap: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; flex-wrap: wrap; }
+.signal-light-wrap { flex-shrink: 0; }
+.signal-light { width: 22px; height: 22px; border-radius: 50%; background: var(--muted); transition: background 0.3s ease, box-shadow 0.3s ease; }
+.signal-light.safe { background: var(--safe); box-shadow: 0 0 22px 6px rgba(79,209,165,0.45); animation: blink 2.2s ease-in-out infinite; }
+.signal-light.caution { background: var(--warn); box-shadow: 0 0 22px 6px rgba(244,184,96,0.45); animation: blink 1.4s ease-in-out infinite; }
+.signal-light.unsafe { background: var(--danger); box-shadow: 0 0 22px 6px rgba(232,103,79,0.45); animation: blink 0.8s ease-in-out infinite; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.signal-copy { flex: 1; min-width: 200px; }
+.signal-eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+#verdict-title { font-family: var(--font-display); font-size: 26px; margin: 0 0 6px; }
+.verdict-detail { color: var(--muted); font-size: 14px; margin: 0 0 10px; }
+.url-trace { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; }
+.mono { font-family: var(--font-mono); color: var(--text); background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; word-break: break-all; }
+
+.score-dial { position: relative; width: 148px; height: 148px; flex-shrink: 0; }
+.dial-track { fill: none; stroke: var(--surface-alt); stroke-width: 9; }
+.dial-bg { fill: var(--surface); }
+.dial-fill { fill: none; stroke: var(--gold); stroke-width: 9; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 60px 60px; stroke-dasharray: 327; stroke-dashoffset: 327; transition: stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1), stroke 0.4s ease; }
+.dial-number {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px;
+}
+.dial-number #score-number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.dial-unit { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; color: var(--muted); line-height: 1; }
+
+.findings-heading { font-family: var(--font-display); font-weight: 600; font-size: 18px; margin: 30px 0 14px; }
+.findings-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.findings-list li { display: flex; gap: 12px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.dot { flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; }
+.dot.good { background: var(--safe); }
+.dot.warn { background: var(--warn); }
+.dot.bad { background: var(--danger); }
+.dot.unknown { background: var(--muted); }
+.finding-body strong { display: block; font-size: 14px; margin-bottom: 2px; }
+.finding-body span { color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+
+.advice-box { margin-top: 24px; border-radius: 12px; padding: 18px 20px; border: 1px solid var(--border); background: var(--surface-alt); font-size: 14px; line-height: 1.6; }
+
+.disclaimer { margin-top: 54px; padding-top: 22px; border-top: 1px solid var(--border); }
+.disclaimer p { color: var(--muted); font-size: 12.5px; line-height: 1.7; margin: 0 0 10px; }
+
+@media (max-width: 560px) {
+  .console { flex-direction: column; }
+  #check-btn { padding: 12px; }
+  .score-dial { margin-left: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="sky">
+  <div class="beam"></div>
+  <div class="stars"></div>
+</div>
+
+<header class="hero">
+  <div class="lighthouse-mark" aria-hidden="true">
+    <div class="lamp"></div>
+    <div class="tower"></div>
+  </div>
+  <p class="eyebrow">ผู้ช่วยส่องทาง ก่อนกดยอมรับคุกกี้</p>
+  <h1>Beacon</h1>
+  <p class="subhead">
+    วางลิงก์ที่คุณกำลังจะเข้า แล้วให้เราส่องไฟตรวจสัญญาณความน่าเชื่อถือของลิงก์นั้น
+    ทำงานทันทีในเบราว์เซอร์ ไม่ต้องติดตั้งอะไร
+  </p>
+
+  <div id="check-form" class="console">
+    <label for="url-input" class="sr-only">ลิงก์ที่ต้องการตรวจสอบ</label>
+    <input id="url-input" name="url" type="text" placeholder="วางลิงก์ที่นี่ เช่น example.com/promo" inputmode="url">
+    <button type="button" id="check-btn"><span>ส่องไฟตรวจสอบ</span></button>
+  </div>
+  <p id="form-error" class="form-error" hidden></p>
+</header>
+
+<main>
+  <section id="loading" class="loading" hidden>
+    <div class="sweep-loader" aria-hidden="true"></div>
+    <p id="loading-text">กำลังส่องไฟไปที่ปลายทาง…</p>
+  </section>
+
+  <section id="result" class="result" hidden>
+    <div class="signal-card">
+      <div class="signal-light-wrap"><div id="signal-light" class="signal-light"></div></div>
+      <div class="signal-copy">
+        <p class="signal-eyebrow">ผลการส่องไฟ</p>
+        <h2 id="verdict-title">—</h2>
+        <p id="verdict-detail" class="verdict-detail"></p>
+        <div class="url-trace"><span id="checked-url" class="mono"></span></div>
+      </div>
+      <div class="score-dial">
+        <svg viewBox="0 0 120 120" width="148" height="148">
+          <circle cx="60" cy="60" r="46" class="dial-bg"/>
+          <circle cx="60" cy="60" r="52" class="dial-track"/>
+          <circle cx="60" cy="60" r="52" class="dial-fill" id="dial-fill"/>
+        </svg>
+        <div class="dial-number"><span id="score-number">0</span><span class="dial-unit">จาก 100</span></div>
+      </div>
+    </div>
+
+    <h3 class="findings-heading">รายละเอียดสัญญาณที่ตรวจพบ</h3>
+    <ul id="findings-list" class="findings-list"></ul>
+
+    <div class="advice-box"><p id="advice-text"></p></div>
+  </section>
+
+  <section class="disclaimer">
+    <p>
+      เพจนี้ตรวจสอบทุกอย่างจากตัว <strong>URL เอง</strong> (รูปแบบโดเมน, HTTPS,
+      คำต้องสงสัย, การปลอมชื่อแบรนด์ ฯลฯ) ทั้งหมดในเบราว์เซอร์ของคุณ — ไม่มีการส่งลิงก์
+      ออกไปที่เซิร์ฟเวอร์ไหน
+    </p>
+    <p>
+      ข้อจำกัด: เบราว์เซอร์ไม่อนุญาตให้เว็บหน้านี้ตรวจสอบใบรับรอง SSL จริง,
+      อายุโดเมน (WHOIS), หรือปลายทางการ redirect ของเว็บอื่นได้โดยตรง
+      (นโยบายความปลอดภัยของเบราว์เซอร์) ผลลัพธ์จึงเป็นการประเมินจาก
+      "รูปแบบ" ของลิงก์เท่านั้น ควรใช้วิจารณญาณร่วมด้วยเสมอ โดยเฉพาะกับลิงก์
+      จากอีเมลหรือข้อความที่ไม่รู้จัก
+    </p>
+  </section>
+</main>
+
+<script>
+const form = document.getElementById("check-form");
+const input = document.getElementById("url-input");
+const btn = document.getElementById("check-btn");
+const errorEl = document.getElementById("form-error");
+const loadingEl = document.getElementById("loading");
+const loadingText = document.getElementById("loading-text");
+const resultEl = document.getElementById("result");
+
+const signalLight = document.getElementById("signal-light");
+const verdictTitle = document.getElementById("verdict-title");
+const verdictDetail = document.getElementById("verdict-detail");
+const checkedUrlEl = document.getElementById("checked-url");
+const dialFill = document.getElementById("dial-fill");
+const scoreNumber = document.getElementById("score-number");
+const findingsList = document.getElementById("findings-list");
+const adviceText = document.getElementById("advice-text");
+
+const DIAL_CIRCUMFERENCE = 327;
+
+const KNOWN_SHORTENERS = new Set([
+  "bit.ly","tinyurl.com","goo.gl","t.co","ow.ly","is.gd","buff.ly","adf.ly",
+  "cutt.ly","shorte.st","tiny.cc","rebrand.ly","s.id","lnkd.in","tr.im","rb.gy"
+]);
+
+const SUSPICIOUS_KEYWORDS = [
+  "login","verify","update","secure","account","confirm","bank","wallet",
+  "free","bonus","gift","win","password","invoice"
+];
+
+// hostnames people commonly mean to type — used to flag likely typosquats
+const POPULAR_BRANDS = [
+  "google.com","facebook.com","apple.com","paypal.com","amazon.com",
+  "microsoft.com","line.me","instagram.com","kbank.co.th","scb.co.th",
+  "promptpay.io","truemoney.com","netflix.com","youtube.com"
+];
+
+const VERDICT_COPY = {
+  safe: {
+    title: "ดูปลอดภัย — สัญญาณส่วนใหญ่ผ่าน",
+    detail: "รูปแบบลิงก์นี้ไม่มีจุดน่าสงสัยที่ตรวจพบได้จากฝั่งเบราว์เซอร์",
+    advice: "ลิงก์นี้ผ่านการตรวจสอบเชิงรูปแบบ แต่ยังควรอ่าน Cookie Policy คร่าว ๆ ก่อนกดยอมรับ และเลือก “ปฏิเสธคุกกี้ที่ไม่จำเป็น” หากมีตัวเลือก",
+  },
+  caution: {
+    title: "ควรระวัง — พบจุดน่าสงสัย",
+    detail: "พบรูปแบบบางอย่างที่มักพบในลิงก์หลอกลวง แนะนำให้ตรวจสอบเพิ่มก่อน",
+    advice: "ตรวจชื่อโดเมนให้ละเอียดอีกครั้งว่าสะกดถูกต้องหรือไม่ หากไม่มั่นใจ ให้เลือก “ปฏิเสธคุกกี้” หรือปิดหน้าไปก่อน แล้วค้นหาชื่อเว็บที่ต้องการเข้าด้วยตนเองแทนการคลิกลิงก์นี้",
+  },
+  unsafe: {
+    title: "มีความเสี่ยงสูง — ไม่แนะนำให้กดยอมรับ",
+    detail: "พบสัญญาณเสี่ยงหลายจุดในตัวลิงก์เอง",
+    advice: "หลีกเลี่ยงการกดยอมรับคุกกี้หรือกรอกข้อมูลใด ๆ บนลิงก์นี้ หากได้รับมาจากอีเมลหรือข้อความ ให้สงสัยไว้ก่อนว่าอาจเป็นลิงก์ฟิชชิง (phishing) และอย่าคลิกต่อ",
+  },
+};
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m + 1}, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i-1] === b[j-1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+
+function normalizeUrl(raw) {
+  raw = raw.trim();
+  if (!/^https?:\/\//i.test(raw)) raw = "http://" + raw;
+  return raw;
+}
+
+function isIpHost(host) {
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(host || "");
+}
+
+function analyze(rawUrl) {
+  const url = normalizeUrl(rawUrl);
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch (e) {
+    return {
+      checkedUrl: rawUrl, score: 0, verdict: "unsafe",
+      findings: [{label: "รูปแบบลิงก์", status: "bad", detail: "อ่านลิงก์นี้ไม่ออก กรุณาตรวจสอบว่าพิมพ์ถูกต้อง"}],
+    };
+  }
+
+  const hostname = parsed.hostname;
+  let score = 100;
+  const findings = [];
+  const deduct = (points, label, detail, status = "bad") => {
+    score -= points;
+    findings.push({label, status, detail});
+  };
+  const note = (label, detail, status = "good") => findings.push({label, status, detail});
+
+  // HTTPS
+  if (parsed.protocol === "https:") {
+    note("การเข้ารหัส (HTTPS)", "ลิงก์นี้ใช้ HTTPS", "good");
+  } else {
+    deduct(25, "การเข้ารหัส (HTTPS)", "ลิงก์นี้ใช้ HTTP ธรรมดา ไม่มีการเข้ารหัส ข้อมูลที่ส่งไปอาจถูกดักฟังได้");
+  }
+
+  // IP as host
+  if (isIpHost(hostname)) {
+    deduct(20, "ชื่อโดเมน", "ลิงก์นี้ใช้ IP address แทนชื่อโดเมน ซึ่งเป็นรูปแบบที่เว็บปลอมมักใช้");
+  } else {
+    note("ชื่อโดเมน", `โฮสต์คือ ${hostname}`, "good");
+  }
+
+  // userinfo (http://user:pass@host or http://real-looking@evil.com)
+  if (parsed.username || parsed.password) {
+    deduct(20, "รูปแบบ URL ผิดปกติ", "ลิงก์มีส่วน user@ อยู่หน้าชื่อโดเมน ซึ่งเป็นกลเม็ดที่ใช้หลอกให้เข้าใจผิดว่ากำลังเข้าเว็บที่ต้องการ");
+  }
+
+  // punycode / homograph
+  if (hostname.includes("xn--")) {
+    deduct(15, "การเข้ารหัสชื่อโดเมน (Punycode)", "ชื่อโดเมนอยู่ในรูปแบบ Punycode (xn--) ซึ่งบางครั้งถูกใช้ปลอมตัวอักษรให้คล้ายแบรนด์จริง (homograph attack)", "warn");
+  }
+
+  // shortener
+  if (KNOWN_SHORTENERS.has(hostname)) {
+    deduct(15, "URL Shortener", `${hostname} เป็นบริการย่อลิงก์ ปลายทางจริงอาจไม่ตรงกับที่เห็น`, "warn");
+  }
+
+  // dots / hyphens
+  const dotCount = (hostname.match(/\./g) || []).length;
+  const hyphenCount = (hostname.match(/-/g) || []).length;
+  if (dotCount > 3) deduct(8, "โครงสร้างโดเมน", `มีจุดในชื่อโดเมนมากผิดปกติ (${dotCount} จุด) อาจเป็นการปลอมแปลง subdomain`, "warn");
+  if (hyphenCount > 3) deduct(8, "โครงสร้างโดเมน", `มีขีดกลาง (-) ในชื่อโดเมนมากผิดปกติ (${hyphenCount} ขีด)`, "warn");
+
+  // suspicious keywords
+  const lowered = hostname.toLowerCase();
+  const hitKeywords = SUSPICIOUS_KEYWORDS.filter(k => lowered.includes(k));
+  if (hitKeywords.length) {
+    deduct(10, "คำที่มักพบในเว็บหลอกลวง", `พบคำว่า ${hitKeywords.join(", ")} อยู่ในชื่อโดเมน`, "warn");
+  }
+
+  // typosquat check against popular brands
+  const bareHost = hostname.replace(/^www\./, "");
+  let closest = null, closestDist = Infinity;
+  for (const brand of POPULAR_BRANDS) {
+    if (bareHost === brand) { closest = null; break; }
+    const d = levenshtein(bareHost, brand);
+    if (d < closestDist) { closestDist = d; closest = brand; }
+  }
+  if (closest && closestDist > 0 && closestDist <= 2 && bareHost.length > 4) {
+    deduct(20, "ความคล้ายชื่อแบรนด์", `ชื่อโดเมน "${hostname}" สะกดใกล้เคียงกับ "${closest}" มาก อาจเป็นการปลอมแปลงชื่อแบรนด์ (typosquatting)`);
+  }
+
+  // overall length
+  if (rawUrl.length > 100) {
+    deduct(5, "ความยาวลิงก์", "ลิงก์ยาวผิดปกติ ซึ่งบางครั้งใช้ซ่อนพารามิเตอร์หรือปลายทางที่แท้จริง", "warn");
+  }
+
+  // non-standard port
+  if (parsed.port && !["80","443",""].includes(parsed.port)) {
+    deduct(8, "พอร์ตที่ใช้", `ลิงก์ระบุพอร์ตที่ไม่ใช่ค่ามาตรฐาน (:${parsed.port})`, "warn");
+  }
+
+  score = Math.max(0, Math.min(100, score));
+  const verdict = score >= 80 ? "safe" : score >= 50 ? "caution" : "unsafe";
+
+  return { checkedUrl: url, score, verdict, findings };
+}
+
+function setLoading(isLoading) {
+  loadingEl.hidden = !isLoading;
+  btn.disabled = isLoading;
+}
+
+function renderResult(data) {
+  const copy = VERDICT_COPY[data.verdict] || VERDICT_COPY.caution;
+  signalLight.className = "signal-light " + data.verdict;
+  verdictTitle.textContent = copy.title;
+  verdictDetail.textContent = copy.detail;
+  adviceText.textContent = copy.advice;
+  checkedUrlEl.textContent = data.checkedUrl;
+
+  scoreNumber.textContent = data.score;
+  const offset = DIAL_CIRCUMFERENCE * (1 - data.score / 100);
+  dialFill.style.strokeDashoffset = offset;
+  dialFill.style.stroke = data.verdict === "safe" ? "#4fd1a5" : data.verdict === "unsafe" ? "#e8674f" : "#f4b860";
+
+  findingsList.innerHTML = "";
+  data.findings.forEach(f => {
+    const li = document.createElement("li");
+    const dot = document.createElement("div");
+    dot.className = "dot " + (f.status || "unknown");
+    const body = document.createElement("div");
+    body.className = "finding-body";
+    const strong = document.createElement("strong");
+    strong.textContent = f.label;
+    const span = document.createElement("span");
+    span.textContent = f.detail;
+    body.appendChild(strong);
+    body.appendChild(span);
+    li.appendChild(dot);
+    li.appendChild(body);
+    findingsList.appendChild(li);
+  });
+
+  resultEl.hidden = false;
+  resultEl.scrollIntoView({behavior: "smooth", block: "start"});
+}
+
+function runCheck() {
+  errorEl.hidden = true;
+  resultEl.hidden = true;
+
+  const url = input.value.trim();
+  if (!url) {
+    errorEl.textContent = "กรุณาวางลิงก์ที่ต้องการตรวจสอบก่อน";
+    errorEl.hidden = false;
+    return;
+  }
+
+  setLoading(true);
+  loadingText.textContent = "กำลังส่องไฟตรวจสอบรูปแบบลิงก์…";
+
+  // Processing runs synchronously and immediately — no artificial delay,
+  // so there's nothing that can leave the loading state stuck.
+  try {
+    const data = analyze(url);
+    renderResult(data);
+  } catch (err) {
+    console.error("Beacon analyze error:", err);
+    errorEl.textContent = "เกิดข้อผิดพลาด กรุณาลองใหม่ (ดูรายละเอียดใน console ของเบราว์เซอร์)";
+    errorEl.hidden = false;
+  } finally {
+    setLoading(false);
+  }
+}
+
+// No <form> is used (some embedded/sandboxed viewers block form submission
+// outright), so the button click and the Enter key are wired up directly.
+btn.addEventListener("click", runCheck);
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    runCheck();
+  }
+});
+</script>
+</body>
+</html>
